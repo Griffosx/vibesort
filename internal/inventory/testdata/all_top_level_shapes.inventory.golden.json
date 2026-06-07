@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 1,
+  "preambleCommentCount": 4,
+  "readyPlan": [
+    "type:Alias",
+    "type:Reader",
+    "type:HandlerFunc",
+    "type:Pair",
+    "var:0",
+    "var:1",
+    "const:0",
+    "const:1",
+    "func:Blocky",
+    "method:Pair.Run",
+    "init:0",
+    "init:1"
+  ],
+  "entities": [
+    {
+      "id": "type:Alias",
+      "kind": "type",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "Alias",
+      "receiver": "",
+      "signature": "type Alias = string",
+      "firstDocLine": "Alias doc.",
+      "comments": [
+        "// Alias doc."
+      ]
+    },
+    {
+      "id": "type:Reader",
+      "kind": "type",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "Reader",
+      "receiver": "",
+      "signature": "type Reader interface {",
+      "firstDocLine": "Reader doc block.",
+      "comments": [
+        "/* Reader doc block. */"
+      ]
+    },
+    {
+      "id": "type:HandlerFunc",
+      "kind": "type",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "HandlerFunc",
+      "receiver": "",
+      "signature": "type HandlerFunc func(string) error",
+      "firstDocLine": "HandlerFunc doc.",
+      "comments": [
+        "// HandlerFunc doc."
+      ]
+    },
+    {
+      "id": "type:Pair",
+      "kind": "type",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "Pair",
+      "receiver": "",
+      "signature": "type Pair[T any] struct {",
+      "firstDocLine": "Pair doc.",
+      "comments": [
+        "// Pair doc."
+      ]
+    },
+    {
+      "id": "var:0",
+      "kind": "var",
+      "movable": false,
+      "pinnedReason": "package var order can be significant",
+      "name": "A,B",
+      "receiver": "",
+      "signature": "var A, B = 1, 2",
+      "firstDocLine": "Names doc.",
+      "comments": [
+        "// Names doc."
+      ]
+    },
+    {
+      "id": "var:1",
+      "kind": "var",
+      "movable": false,
+      "pinnedReason": "go directive: go:embed",
+      "name": "Embedded",
+      "receiver": "",
+      "signature": "var Embedded string",
+      "firstDocLine": "",
+      "comments": [
+        "//go:embed all_top_level_shapes.go"
+      ]
+    },
+    {
+      "id": "const:0",
+      "kind": "const",
+      "movable": false,
+      "pinnedReason": "package const order can be significant",
+      "name": "First,Second",
+      "receiver": "",
+      "signature": "const (",
+      "firstDocLine": "",
+      "comments": [
+        "// First starts iota."
+      ]
+    },
+    {
+      "id": "const:1",
+      "kind": "const",
+      "movable": false,
+      "pinnedReason": "package const order can be significant",
+      "name": "Single",
+      "receiver": "",
+      "signature": "const Single = \"single\"",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "func:Blocky",
+      "kind": "func",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "Blocky",
+      "receiver": "",
+      "signature": "func Blocky() {} /* trailing block",
+      "firstDocLine": "Blocky is here.",
+      "comments": [
+        "// Blocky is here.",
+        "/* trailing block\ncontinues */"
+      ]
+    },
+    {
+      "id": "method:Pair.Run",
+      "kind": "method",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "Run",
+      "receiver": "Pair",
+      "signature": "func (p Pair[T]) Run() {}",
+      "firstDocLine": "Runner has a value receiver.",
+      "comments": [
+        "// Runner has a value receiver."
+      ]
+    },
+    {
+      "id": "init:0",
+      "kind": "init",
+      "movable": false,
+      "pinnedReason": "init order is significant",
+      "name": "init",
+      "receiver": "",
+      "signature": "func init() {}",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "init:1",
+      "kind": "init",
+      "movable": false,
+      "pinnedReason": "init order is significant",
+      "name": "init",
+      "receiver": "",
+      "signature": "func init() {}",
+      "firstDocLine": "",
+      "comments": []
+    }
+  ]
+}

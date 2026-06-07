@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "preambleCommentCount": 0,
+  "readyPlan": [
+    "func:KnownDirective",
+    "func:UnknownDirective",
+    "func:SameLineDirectiveText",
+    "func:TrailingGenerateOwner"
+  ],
+  "entities": [
+    {
+      "id": "func:KnownDirective",
+      "kind": "func",
+      "movable": false,
+      "pinnedReason": "go directive: go:noinline",
+      "name": "KnownDirective",
+      "receiver": "",
+      "signature": "func KnownDirective() {}",
+      "firstDocLine": "",
+      "comments": [
+        "//go:noinline"
+      ]
+    },
+    {
+      "id": "func:UnknownDirective",
+      "kind": "func",
+      "movable": false,
+      "pinnedReason": "go directive: unknown go:somethingmadeup",
+      "name": "UnknownDirective",
+      "receiver": "",
+      "signature": "func UnknownDirective() {}",
+      "firstDocLine": "",
+      "comments": [
+        "//go:somethingmadeup"
+      ]
+    },
+    {
+      "id": "func:SameLineDirectiveText",
+      "kind": "func",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "SameLineDirectiveText",
+      "receiver": "",
+      "signature": "func SameLineDirectiveText() {} //go:noinline",
+      "firstDocLine": "Same-line go directive text stays ordinary.",
+      "comments": [
+        "// Same-line go directive text stays ordinary.",
+        "//go:noinline"
+      ]
+    },
+    {
+      "id": "func:TrailingGenerateOwner",
+      "kind": "func",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "TrailingGenerateOwner",
+      "receiver": "",
+      "signature": "func TrailingGenerateOwner() {}",
+      "firstDocLine": "",
+      "comments": []
+    }
+  ]
+}

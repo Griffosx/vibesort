@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "preambleCommentCount": 0,
+  "readyPlan": [
+    "type:AssetHandler",
+    "var:0",
+    "const:0",
+    "type_group:0",
+    "func:Slow",
+    "func:NewAssetHandler",
+    "method:AssetHandler.Create",
+    "method:AssetHandler.List",
+    "init:0"
+  ],
+  "entities": [
+    {
+      "id": "type:AssetHandler",
+      "kind": "type",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "AssetHandler",
+      "receiver": "",
+      "signature": "type AssetHandler struct{}",
+      "firstDocLine": "Asset section",
+      "comments": [
+        "// Asset section\n// AssetHandler handles assets."
+      ]
+    },
+    {
+      "id": "var:0",
+      "kind": "var",
+      "movable": false,
+      "pinnedReason": "package var order can be significant",
+      "name": "ErrNotFound",
+      "receiver": "",
+      "signature": "var ErrNotFound = fmt.Errorf(\"missing\")",
+      "firstDocLine": "ErrNotFound is returned when missing.",
+      "comments": [
+        "// ErrNotFound is returned when missing."
+      ]
+    },
+    {
+      "id": "const:0",
+      "kind": "const",
+      "movable": false,
+      "pinnedReason": "package const order can be significant",
+      "name": "DefaultLimit",
+      "receiver": "",
+      "signature": "const DefaultLimit = 10",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "type_group:0",
+      "kind": "type_group",
+      "movable": false,
+      "pinnedReason": "grouped type declarations are pinned in v1",
+      "name": "Grouped",
+      "receiver": "",
+      "signature": "type (",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "func:Slow",
+      "kind": "func",
+      "movable": false,
+      "pinnedReason": "go directive: go:noinline",
+      "name": "Slow",
+      "receiver": "",
+      "signature": "func Slow() {}",
+      "firstDocLine": "",
+      "comments": [
+        "//go:noinline"
+      ]
+    },
+    {
+      "id": "func:NewAssetHandler",
+      "kind": "func",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "NewAssetHandler",
+      "receiver": "",
+      "signature": "func NewAssetHandler() *AssetHandler { return &AssetHandler{} }",
+      "firstDocLine": "NewAssetHandler builds a handler.",
+      "comments": [
+        "// NewAssetHandler builds a handler."
+      ]
+    },
+    {
+      "id": "method:AssetHandler.Create",
+      "kind": "method",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "Create",
+      "receiver": "AssetHandler",
+      "signature": "func (h *AssetHandler) Create() {} // trailing create",
+      "firstDocLine": "",
+      "comments": [
+        "// trailing create"
+      ]
+    },
+    {
+      "id": "method:AssetHandler.List",
+      "kind": "method",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "List",
+      "receiver": "AssetHandler",
+      "signature": "func (h *AssetHandler) List() {}",
+      "firstDocLine": "List lists assets.",
+      "comments": [
+        "// ---- queries ----",
+        "// List lists assets."
+      ]
+    },
+    {
+      "id": "init:0",
+      "kind": "init",
+      "movable": false,
+      "pinnedReason": "init order is significant",
+      "name": "init",
+      "receiver": "",
+      "signature": "func init() {}",
+      "firstDocLine": "",
+      "comments": []
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "preambleCommentCount": 0,
+  "readyPlan": [
+    "func:_:0",
+    "func:_:1",
+    "type:_:0",
+    "type:_:1",
+    "type:BlankReceiver",
+    "method:BlankReceiver._:0",
+    "method:BlankReceiver._:1"
+  ],
+  "entities": [
+    {
+      "id": "func:_:0",
+      "kind": "func",
+      "movable": false,
+      "pinnedReason": "blank identifier declaration has no stable name",
+      "name": "_",
+      "receiver": "",
+      "signature": "func _() {}",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "func:_:1",
+      "kind": "func",
+      "movable": false,
+      "pinnedReason": "blank identifier declaration has no stable name",
+      "name": "_",
+      "receiver": "",
+      "signature": "func _() {}",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "type:_:0",
+      "kind": "type",
+      "movable": false,
+      "pinnedReason": "blank identifier declaration has no stable name",
+      "name": "_",
+      "receiver": "",
+      "signature": "type _ struct{}",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "type:_:1",
+      "kind": "type",
+      "movable": false,
+      "pinnedReason": "blank identifier declaration has no stable name",
+      "name": "_",
+      "receiver": "",
+      "signature": "type _ struct{}",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "type:BlankReceiver",
+      "kind": "type",
+      "movable": true,
+      "pinnedReason": "",
+      "name": "BlankReceiver",
+      "receiver": "",
+      "signature": "type BlankReceiver struct{}",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "method:BlankReceiver._:0",
+      "kind": "method",
+      "movable": false,
+      "pinnedReason": "blank identifier declaration has no stable name",
+      "name": "_",
+      "receiver": "BlankReceiver",
+      "signature": "func (BlankReceiver) _() {}",
+      "firstDocLine": "",
+      "comments": []
+    },
+    {
+      "id": "method:BlankReceiver._:1",
+      "kind": "method",
+      "movable": false,
+      "pinnedReason": "blank identifier declaration has no stable name",
+      "name": "_",
+      "receiver": "BlankReceiver",
+      "signature": "func (BlankReceiver) _() {}",
+      "firstDocLine": "",
+      "comments": []
+    }
+  ]
+}
