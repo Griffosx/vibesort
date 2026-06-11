@@ -45,8 +45,8 @@ type Preamble struct {
 	segment []byte
 }
 
-// Postamble is the fixed segment after the last declaration, present only
-// when the file ends with trailing comments. It never moves.
+// Postamble is the fixed trailing segment after the last declaration, such
+// as loose end-of-file comments or whitespace. It never moves.
 type Postamble struct {
 	Kind         string `json:"kind"`
 	Fixed        bool   `json:"fixed"`
@@ -61,9 +61,10 @@ type Postamble struct {
 //
 // IDs follow a fixed grammar: "func:Name", "method:Receiver.Name", and
 // "type:Name" for uniquely named declarations; ordinal forms such as
-// "var:0", "const:0", "init:0", and "type_group:0" otherwise. Movable
-// reports whether a plan may reorder the entity. Pinned entities state why
-// in PinnedReason and must keep their original relative order.
+// "var:0", "const:0", "init:0", "type_group:0", "func:_:0",
+// "type:_:0", and "method:Receiver._:0" otherwise. Movable reports
+// whether a plan may reorder the entity. Pinned entities state why in
+// PinnedReason and must keep their original relative order.
 type Entity struct {
 	ID           string         `json:"id"`
 	Kind         string         `json:"kind"`
