@@ -1,3 +1,16 @@
+// Package inventory builds a lossless, fail-closed model of the top-level
+// declarations in a single gofmt-clean Go source file.
+//
+// The model partitions the source into a fixed preamble (package clause and
+// imports), an ordered list of entities (the remaining top-level
+// declarations), and an optional fixed postamble (trailing comments). Every
+// byte belongs to exactly one segment, which Build proves by reassembling
+// the segments in original order and requiring the result to match the
+// input exactly.
+//
+// Files that cannot be modeled safely are rejected instead of approximated:
+// sources that are not gofmt-clean, generated files, cgo files, and files
+// with multiple top-level declarations on one line.
 package inventory
 
 import (
@@ -15,6 +28,8 @@ import (
 	"strings"
 )
 
+// SchemaVersion identifies the JSON layout of Document. Consumers should
+// reject documents carrying an unknown version.
 const SchemaVersion = 1
 
 const blankIdentifierPinnedReason = "blank identifier declaration has no stable name"
@@ -35,6 +50,11 @@ var recognizedGoDirectives = map[string]struct{}{
 	"go:wasmimport":     {},
 }
 
+// Document is the inventory of one Go source file. Its JSON form is the
+// public contract consumed by plan-producing tools.
+//
+// The raw source segments are unexported, so a Document decoded from JSON
+// cannot be reassembled; rebuild it from source instead.
 type Document struct {
 	SchemaVersion int        `json:"schemaVersion"`
 	File          string     `json:"file"`
@@ -47,6 +67,8 @@ type Document struct {
 	source []byte
 }
 
+// Preamble is the fixed segment from the start of the file through the
+// package clause and imports. It never moves.
 type Preamble struct {
 	Kind         string `json:"kind"`
 	Fixed        bool   `json:"fixed"`
@@ -56,6 +78,8 @@ type Preamble struct {
 	segment []byte
 }
 
+// Postamble is the fixed segment after the last declaration, present only
+// when the file ends with trailing comments. It never moves.
 type Postamble struct {
 	Kind         string `json:"kind"`
 	Fixed        bool   `json:"fixed"`
@@ -65,6 +89,14 @@ type Postamble struct {
 	segment []byte
 }
 
+// Entity is one post-preamble top-level declaration together with the
+// comment groups it owns.
+//
+// IDs follow a fixed grammar: "func:Name", "method:Receiver.Name", and
+// "type:Name" for uniquely named declarations; ordinal forms such as
+// "var:0", "const:0", "init:0", and "type_group:0" otherwise. Movable
+// reports whether a plan may reorder the entity. Pinned entities state why
+// in PinnedReason and must keep their original relative order.
 type Entity struct {
 	ID           string         `json:"id"`
 	Kind         string         `json:"kind"`
@@ -81,6 +113,8 @@ type Entity struct {
 	segment []byte
 }
 
+// Span locates a segment as the half-open byte range [StartByte, EndByte)
+// with the corresponding line/column positions.
 type Span struct {
 	StartByte int      `json:"startByte"`
 	EndByte   int      `json:"endByte"`
@@ -88,21 +122,26 @@ type Span struct {
 	End       Position `json:"end"`
 }
 
+// Position is a 1-based line and column in the source file.
 type Position struct {
 	Line   int `json:"line"`
 	Column int `json:"column"`
 }
 
+// CommentGroup is the raw text and location of one owned comment group.
 type CommentGroup struct {
 	Text string `json:"text"`
 	Span Span   `json:"span"`
 }
 
+// ReadyPlan is the current entity order in plan form, ready to be permuted
+// by a plan-producing tool and fed back for validation.
 type ReadyPlan struct {
 	File  string      `json:"file"`
 	Order []OrderItem `json:"order"`
 }
 
+// OrderItem references one entity by ID.
 type OrderItem struct {
 	ID string `json:"id"`
 }
@@ -128,6 +167,8 @@ func (o offsets) positionForOffset(offset int) Position {
 	return Position{Line: p.Line, Column: p.Column}
 }
 
+// Build reads the Go source file at path and returns its inventory. The
+// file must be gofmt-clean, not generated, and not a cgo file.
 func Build(path string) (*Document, error) {
 	if filepath.Ext(path) != ".go" {
 		return nil, fmt.Errorf("%s is not a Go source file", path)
@@ -146,6 +187,8 @@ func Build(path string) (*Document, error) {
 	return BuildSource(path, resolved, src)
 }
 
+// BuildSource builds the inventory for src in memory. path and resolved
+// are recorded verbatim as Document.File and Document.ResolvedFile.
 func BuildSource(path, resolved string, src []byte) (*Document, error) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, resolved, src, parser.ParseComments)
@@ -225,6 +268,11 @@ func BuildSource(path, resolved string, src []byte) (*Document, error) {
 	return doc, nil
 }
 
+// Reassemble returns the document's source with entities arranged in the
+// given order. order must contain every entity ID exactly once, and pinned
+// entities must keep their original relative order. doc must come from
+// Build or BuildSource in the same process; documents decoded from JSON
+// have no source segments and are rejected.
 func Reassemble(doc *Document, order []string) ([]byte, error) {
 	if len(order) != len(doc.Entities) {
 		return nil, fmt.Errorf("order length %d does not match entity count %d", len(order), len(doc.Entities))
