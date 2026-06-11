@@ -23,12 +23,14 @@ Implemented:
 - fixed preamble inventory
 - post-preamble top-level entity inventory
 - movable/pinned classification
+- formatter-clean input checks
+- generated file and cgo rejection
 - identity round-trip verification
+- in-memory complete-order reassembly checks
 - inventory JSON output with a ready-to-edit order plan
 
 Planned next:
 
-- formatter-clean input checks
 - order-plan validation
 - safe rewrite/apply
 - post-rewrite formatting and verification

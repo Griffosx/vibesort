@@ -20,6 +20,21 @@ const SchemaVersion = 1
 const blankIdentifierPinnedReason = "blank identifier declaration has no stable name"
 const lineDirectivePinnedReason = "go directive: line directive"
 
+var recognizedGoDirectives = map[string]struct{}{
+	"go:debug":          {},
+	"go:embed":          {},
+	"go:generate":       {},
+	"go:linkname":       {},
+	"go:noescape":       {},
+	"go:noinline":       {},
+	"go:norace":         {},
+	"go:nosplit":        {},
+	"go:notinheap":      {},
+	"go:uintptrescapes": {},
+	"go:wasmexport":     {},
+	"go:wasmimport":     {},
+}
+
 type Document struct {
 	SchemaVersion int        `json:"schemaVersion"`
 	File          string     `json:"file"`
@@ -94,7 +109,23 @@ type OrderItem struct {
 
 type offsets struct {
 	file *token.File
-	fset *token.FileSet
+}
+
+func (o offsets) offset(pos token.Pos) int {
+	return o.file.Offset(pos)
+}
+
+func (o offsets) line(pos token.Pos) int {
+	return o.file.PositionFor(pos, false).Line
+}
+
+func (o offsets) column(pos token.Pos) int {
+	return o.file.PositionFor(pos, false).Column
+}
+
+func (o offsets) positionForOffset(offset int) Position {
+	p := o.file.PositionFor(o.file.Pos(offset), false)
+	return Position{Line: p.Line, Column: p.Column}
 }
 
 func Build(path string) (*Document, error) {
@@ -138,7 +169,7 @@ func BuildSource(path, resolved string, src []byte) (*Document, error) {
 	if tokFile == nil {
 		return nil, errors.New("could not resolve token file")
 	}
-	off := offsets{file: tokFile, fset: fset}
+	off := offsets{file: tokFile}
 
 	decls := postPreambleDecls(file)
 	if err := rejectSameLineDecls(decls, off); err != nil {
@@ -296,6 +327,8 @@ func sameStrings(a, b []string) bool {
 }
 
 func writeEntityBoundary(out *bytes.Buffer, previous, next []byte) {
+	// Inventory-built segments normally end on line boundaries. This keeps
+	// Reassemble defensive for tests or future callers with synthetic segments.
 	if len(previous) == 0 || len(next) == 0 || endsLineBreak(previous) {
 		return
 	}
@@ -346,9 +379,9 @@ func rejectSameLineDecls(decls []ast.Decl, off offsets) error {
 	if len(decls) < 2 {
 		return nil
 	}
-	previousLine := off.fset.PositionFor(decls[0].Pos(), false).Line
+	previousLine := off.line(decls[0].Pos())
 	for _, decl := range decls[1:] {
-		line := off.fset.PositionFor(decl.Pos(), false).Line
+		line := off.line(decl.Pos())
 		if line == previousLine {
 			return fmt.Errorf("multiple top-level declarations on line %d are not supported", line)
 		}
@@ -369,36 +402,13 @@ func fixedPreambleEnd(src []byte, file *ast.File, firstPost ast.Decl, off offset
 	}
 
 	if lastImport != nil {
-		return declOwnedLineEnd(src, lastImport, file.Comments, off)
+		return ownedLineEnd(src, lastImport.End(), file.Comments, off)
 	}
-	return packageOwnedLineEnd(src, file, off)
+	return ownedLineEnd(src, file.Name.End(), file.Comments, off)
 }
 
 func fixedPostambleStart(src []byte, lastPost ast.Decl, comments []*ast.CommentGroup, off offsets) int {
-	return declOwnedLineEnd(src, lastPost, comments, off)
-}
-
-func packageOwnedLineEnd(src []byte, file *ast.File, off offsets) int {
-	packageEnd := off.file.Offset(file.Name.End())
-	packageEndLine := off.fset.PositionFor(file.Name.End(), false).Line
-	end := lineEndAfter(src, packageEnd)
-
-	for _, group := range file.Comments {
-		groupStart := off.file.Offset(group.Pos())
-		if groupStart < packageEnd {
-			continue
-		}
-		groupStartLine := off.fset.PositionFor(group.Pos(), false).Line
-		if groupStartLine != packageEndLine {
-			continue
-		}
-		groupEnd := off.file.Offset(group.End())
-		if lineEnd := lineEndAfter(src, groupEnd); lineEnd > end {
-			end = lineEnd
-		}
-	}
-
-	return end
+	return ownedLineEnd(src, lastPost.End(), comments, off)
 }
 
 func buildEntities(src []byte, file *ast.File, decls []ast.Decl, preambleEnd, postambleStart int, off offsets) ([]Entity, error) {
@@ -410,12 +420,12 @@ func buildEntities(src []byte, file *ast.File, decls []ast.Decl, preambleEnd, po
 	for i, decl := range decls {
 		end := postambleStart
 		if i < len(decls)-1 {
-			end = declOwnedLineEnd(src, decl, file.Comments, off)
+			end = ownedLineEnd(src, decl.End(), file.Comments, off)
 		}
 		if start < 0 || end < start || end > len(src) {
 			return nil, fmt.Errorf("invalid segment bounds for entity %d", i)
 		}
-		declStart := off.file.Offset(decl.Pos())
+		declStart := off.offset(decl.Pos())
 		if start == end || declStart < start || declStart >= end {
 			return nil, fmt.Errorf("invalid segment for entity %d: declaration is outside its source segment", i)
 		}
@@ -484,15 +494,11 @@ func classifyEntity(decl ast.Decl, index int, ordinals map[string]int, segment [
 	case *ast.GenDecl:
 		entity.FirstDocLine = firstDocLine(d.Doc)
 		switch d.Tok {
-		case token.VAR:
-			entity.Kind = "var"
-			entity.ID = ordinalID("var", ordinals)
-			entity.PinnedReason = "package var order can be significant"
-			entity.Name = genDeclName(d)
-		case token.CONST:
-			entity.Kind = "const"
-			entity.ID = ordinalID("const", ordinals)
-			entity.PinnedReason = "package const order can be significant"
+		case token.VAR, token.CONST:
+			kind := d.Tok.String()
+			entity.Kind = kind
+			entity.ID = ordinalID(kind, ordinals)
+			entity.PinnedReason = "package " + kind + " order can be significant"
 			entity.Name = genDeclName(d)
 		case token.TYPE:
 			if d.Lparen.IsValid() || len(d.Specs) != 1 {
@@ -540,21 +546,19 @@ func ordinalID(kind string, ordinals map[string]int) string {
 	return kind + ":" + strconv.Itoa(n)
 }
 
-func declOwnedLineEnd(src []byte, decl ast.Decl, comments []*ast.CommentGroup, off offsets) int {
-	declEnd := off.file.Offset(decl.End())
-	declEndLine := off.fset.PositionFor(decl.End(), false).Line
-	end := lineEndAfter(src, declEnd)
+func ownedLineEnd(src []byte, endPos token.Pos, comments []*ast.CommentGroup, off offsets) int {
+	ownedEnd := off.offset(endPos)
+	ownedEndLine := off.line(endPos)
+	end := lineEndAfter(src, ownedEnd)
 
 	for _, group := range comments {
-		groupStart := off.file.Offset(group.Pos())
-		if groupStart < declEnd {
+		groupStart, groupEnd := commentGroupBounds(group, off)
+		if groupStart < ownedEnd {
 			continue
 		}
-		groupStartLine := off.fset.PositionFor(group.Pos(), false).Line
-		if groupStartLine != declEndLine {
+		if off.line(group.Pos()) != ownedEndLine {
 			continue
 		}
-		groupEnd := off.file.Offset(group.End())
 		if lineEnd := lineEndAfter(src, groupEnd); lineEnd > end {
 			end = lineEnd
 		}
@@ -580,22 +584,15 @@ func spanFor(start, end int, off offsets) Span {
 	return Span{
 		StartByte: start,
 		EndByte:   end,
-		Start:     positionForOffset(start, off),
-		End:       positionForOffset(end, off),
+		Start:     off.positionForOffset(start),
+		End:       off.positionForOffset(end),
 	}
-}
-
-func positionForOffset(offset int, off offsets) Position {
-	pos := off.file.Pos(offset)
-	p := off.fset.PositionFor(pos, false)
-	return Position{Line: p.Line, Column: p.Column}
 }
 
 func countCommentsInRange(groups []*ast.CommentGroup, start, end int, off offsets) int {
 	count := 0
 	for _, group := range groups {
-		groupStart := off.file.Offset(group.Pos())
-		groupEnd := off.file.Offset(group.End())
+		groupStart, groupEnd := commentGroupBounds(group, off)
 		if groupStart >= start && groupEnd <= end {
 			count++
 		}
@@ -606,8 +603,7 @@ func countCommentsInRange(groups []*ast.CommentGroup, start, end int, off offset
 func commentGroupsInRange(groups []*ast.CommentGroup, start, end int, off offsets) []CommentGroup {
 	out := []CommentGroup{}
 	for _, group := range groups {
-		groupStart := off.file.Offset(group.Pos())
-		groupEnd := off.file.Offset(group.End())
+		groupStart, groupEnd := commentGroupBounds(group, off)
 		if groupStart < start || groupEnd > end {
 			continue
 		}
@@ -617,6 +613,10 @@ func commentGroupsInRange(groups []*ast.CommentGroup, start, end int, off offset
 		})
 	}
 	return out
+}
+
+func commentGroupBounds(group *ast.CommentGroup, off offsets) (int, int) {
+	return off.offset(group.Pos()), off.offset(group.End())
 }
 
 func rawCommentText(group *ast.CommentGroup) string {
@@ -641,7 +641,7 @@ func firstDocLine(group *ast.CommentGroup) string {
 }
 
 func declSignatureLine(segment []byte, segmentStart int, decl ast.Decl, off offsets) string {
-	declStart := off.file.Offset(decl.Pos()) - segmentStart
+	declStart := off.offset(decl.Pos()) - segmentStart
 	if declStart < 0 || declStart >= len(segment) {
 		return ""
 	}
@@ -649,8 +649,8 @@ func declSignatureLine(segment []byte, segmentStart int, decl ast.Decl, off offs
 }
 
 func directiveCommentsForDecl(decl ast.Decl, start, end int, groups []*ast.CommentGroup, off offsets) []*ast.Comment {
-	declStart := off.file.Offset(decl.Pos())
-	declEnd := off.file.Offset(decl.End())
+	declStart := off.offset(decl.Pos())
+	declEnd := off.offset(decl.End())
 	comments := []*ast.Comment{}
 	seen := map[*ast.Comment]struct{}{}
 
@@ -658,8 +658,7 @@ func directiveCommentsForDecl(decl ast.Decl, start, end int, groups []*ast.Comme
 		if group == nil {
 			return
 		}
-		groupStart := off.file.Offset(group.Pos())
-		groupEnd := off.file.Offset(group.End())
+		groupStart, groupEnd := commentGroupBounds(group, off)
 		if groupStart < start || groupEnd > end {
 			return
 		}
@@ -673,8 +672,7 @@ func directiveCommentsForDecl(decl ast.Decl, start, end int, groups []*ast.Comme
 	}
 
 	for _, group := range groups {
-		groupStart := off.file.Offset(group.Pos())
-		groupEnd := off.file.Offset(group.End())
+		groupStart, groupEnd := commentGroupBounds(group, off)
 		if groupStart < start || groupEnd > end {
 			continue
 		}
@@ -682,7 +680,7 @@ func directiveCommentsForDecl(decl ast.Decl, start, end int, groups []*ast.Comme
 			addGroup(group)
 			continue
 		}
-		if groupStart >= declEnd && off.fset.PositionFor(group.Pos(), false).Column == 1 {
+		if groupStart >= declEnd && off.column(group.Pos()) == 1 {
 			addGroup(group)
 		}
 	}
@@ -704,7 +702,7 @@ func directiveCommentsForDecl(decl ast.Decl, start, end int, groups []*ast.Comme
 func hasLineDirectiveBefore(groups []*ast.CommentGroup, end int, off offsets) bool {
 	for _, group := range groups {
 		for _, comment := range group.List {
-			if off.file.Offset(comment.Slash) >= end {
+			if off.offset(comment.Slash) >= end {
 				continue
 			}
 			if isLineDirective(comment, off) {
@@ -761,29 +759,10 @@ func normalizeReceiverExpr(expr ast.Expr) string {
 }
 
 func scanDirectives(comments []*ast.Comment, off offsets) string {
-	recognized := map[string]struct{}{
-		"go:debug":          {},
-		"go:embed":          {},
-		"go:generate":       {},
-		"go:linkname":       {},
-		"go:noescape":       {},
-		"go:noinline":       {},
-		"go:norace":         {},
-		"go:nosplit":        {},
-		"go:notinheap":      {},
-		"go:uintptrescapes": {},
-		"go:wasmexport":     {},
-		"go:wasmimport":     {},
-	}
-
-	var firstDirective string
 	for _, comment := range comments {
 		line := comment.Text
 		if isLineDirective(comment, off) {
-			if firstDirective == "" {
-				firstDirective = "line directive"
-			}
-			continue
+			return "line directive"
 		}
 		if !strings.HasPrefix(line, "//go:") {
 			continue
@@ -792,26 +771,23 @@ func scanDirectives(comments []*ast.Comment, off offsets) string {
 		if fields := strings.Fields(name); len(fields) > 0 {
 			name = fields[0]
 		}
-		if name == "go:generate" && off.fset.PositionFor(comment.Slash, false).Column != 1 {
+		if name == "go:generate" && off.column(comment.Slash) != 1 {
 			continue
 		}
-		if firstDirective == "" {
-			if _, ok := recognized[name]; ok {
-				firstDirective = name
-			} else {
-				firstDirective = "unknown " + name
-			}
+		if _, ok := recognizedGoDirectives[name]; ok {
+			return name
 		}
+		return "unknown " + name
 	}
 
-	return firstDirective
+	return ""
 }
 
 func isLineDirective(comment *ast.Comment, off offsets) bool {
 	text := comment.Text
 	switch {
 	case strings.HasPrefix(text, "//line "):
-		return off.fset.PositionFor(comment.Slash, false).Column == 1 && strings.Contains(text, ":")
+		return off.column(comment.Slash) == 1 && strings.Contains(text, ":")
 	case strings.HasPrefix(text, "/*line "):
 		return strings.HasSuffix(text, "*/") && strings.Contains(text, ":")
 	default:
