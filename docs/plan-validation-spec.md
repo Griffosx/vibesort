@@ -68,6 +68,7 @@ usage: vibesort validate plan.json
 
 ```json
 {
+  "schemaVersion": 1,
   "file": "internal/api/handlers/asset.go",
   "order": [
     {"id": "type:AssetHandler"},
@@ -79,8 +80,11 @@ usage: vibesort validate plan.json
 
 Required fields:
 
+- `schemaVersion`: integer plan schema version; this spec defines version `1`
 - `file`: string path to one Go source file
 - `order`: array of order items
+
+The version lives on the plan itself because plans travel as standalone files; the inventory document's `schemaVersion` does not protect them. The inventory `readyPlan` output should gain the same field in Sprint 2 so it remains a valid plan as-is.
 
 Order item fields:
 
@@ -114,25 +118,27 @@ Rules:
 
 1. Plan JSON must be syntactically valid.
 2. Plan JSON must match the schema exactly.
-3. `file` must resolve to an inventory-supported Go source file.
-4. `order` length must equal the number of post-preamble entities.
-5. Every post-preamble entity ID must appear exactly once.
-6. Unknown IDs are rejected.
-7. Duplicate IDs are rejected.
-8. Fixed preamble and postamble segments must not appear in `order`.
-9. Pinned post-preamble entities must keep their original relative order.
+3. `schemaVersion` must equal a supported version (currently `1`).
+4. `file` must resolve to an inventory-supported Go source file.
+5. `order` length must equal the number of post-preamble entities.
+6. Every post-preamble entity ID must appear exactly once.
+7. Unknown IDs are rejected.
+8. Duplicate IDs are rejected.
+9. Fixed preamble and postamble segments must not appear in `order`.
+10. Pinned post-preamble entities must keep their original relative order.
 
 Recommended error priority:
 
 1. unreadable or malformed plan JSON
 2. schema/type errors
-3. unreadable or unsupported target file
-4. inventory failures
-5. order length mismatch
-6. duplicate IDs
-7. unknown IDs
-8. missing IDs
-9. pinned relative-order change
+3. unsupported `schemaVersion`
+4. unreadable or unsupported target file
+5. inventory failures
+6. order length mismatch
+7. duplicate IDs
+8. unknown IDs
+9. missing IDs
+10. pinned relative-order change
 
 This priority gives predictable tests. It is not a promise to report every issue in one run.
 
@@ -143,6 +149,8 @@ Sprint 2 should add tests for:
 - valid identity order plan
 - valid non-trivial movable reorder
 - malformed JSON
+- missing `schemaVersion`
+- unsupported `schemaVersion`
 - missing `file`
 - missing `order`
 - wrong field types

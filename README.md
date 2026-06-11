@@ -36,11 +36,15 @@ Planned next:
 - post-rewrite formatting and verification
 - skill wrappers for agent workflows
 
+Longer-term direction — ordering policy files, a CI check mode, within-package file moves — lives in [docs/direction.md](docs/direction.md).
+
 ## Why
 
-Large source files often drift into a hard-to-read order: handlers mixed with request types, public methods separated from helpers, or related functions scattered across unrelated code.
+Two reasons, one mechanical and one strategic.
 
-Vibesort aims to make those files easier to review without introducing hand-edited rewrites or broad formatting churn.
+The mechanical one: some files are catalogs, not narratives. Repositories, API clients, and handler sets are flat lists of similar-shaped declarations with no internal call flow, read as references — "does a method that does X already exist?" In those files physical order is the table of contents: grouped methods (for example CRUD) make the API surface scannable, and near-duplicates collide visually instead of accumulating. Narrative code — business logic with a call-graph story — gains nothing from sorting, and Vibesort is not meant for it.
+
+The strategic one: LLMs and coding agents are good at deciding how code should be organized and unreliable at rewriting files without collateral damage. Vibesort splits the job: the model emits a plan over verified entity IDs, and deterministic tooling proves the result is a pure reorder — same bytes, same comments, new order. The safety harness is the product; reordering is the first edit small enough to prove safe.
 
 It is not a universal style enforcer. It is a fail-closed workflow for one narrow job: reorder declarations when the language adapter can prove the move is safe.
 
@@ -62,6 +66,7 @@ The LLM returns JSON, not source code:
 
 ```json
 {
+  "schemaVersion": 1,
   "file": "internal/api/handlers/asset.go",
   "order": [
     {"id": "type:AssetHandler"},
@@ -83,6 +88,13 @@ go run ./cmd/vibesort inventory path/to/file.go
 ```
 
 The command prints structured JSON describing the fixed preamble, top-level entities, movability, pinned reasons, source spans, comments, and the current valid order.
+
+## Trade-offs
+
+Two costs are inherent and worth knowing up front:
+
+- A pure reorder is a large moved-lines diff. Keep reorders in their own commits, separate from behavior changes, and consider listing them in `.git-blame-ignore-revs`.
+- Comment attachment is verified mechanically; comment meaning is not. A comment like "the three helpers below handle retries" travels with one declaration and can become stale after a reorder. Review narrative comments in the diff.
 
 ## Non-Goals
 

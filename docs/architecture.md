@@ -113,6 +113,8 @@ This repository does not currently define task or linter wiring. Add those only 
 
 ## Elixir Adapter
 
+Status: deferred. Current direction is depth over breadth — extend the Go adapter (ordering policy, check mode, within-package file moves) before adding a second language; see [direction.md](direction.md). This section is kept as a design reference.
+
 Elixir is possible, but stricter than Go.
 
 Recommended implementation tools:
