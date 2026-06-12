@@ -96,6 +96,11 @@ func BuildSource(path, resolved string, src []byte) (*Document, error) {
 		SchemaVersion: SchemaVersion,
 		File:          path,
 		ResolvedFile:  resolved,
+		ReadyPlan: ReadyPlan{
+			SchemaVersion: PlanSchemaVersion,
+			File:          path,
+			Order:         []OrderItem{},
+		},
 		Preamble: Preamble{
 			Kind:         "preamble",
 			Fixed:        true,
@@ -126,7 +131,6 @@ func BuildSource(path, resolved string, src []byte) (*Document, error) {
 	for _, entity := range entities {
 		doc.ReadyPlan.Order = append(doc.ReadyPlan.Order, OrderItem{ID: entity.ID})
 	}
-	doc.ReadyPlan.File = path
 
 	if err := doc.verifyIdentity(); err != nil {
 		return nil, err

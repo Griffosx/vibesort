@@ -1,17 +1,39 @@
 {
   "schemaVersion": 1,
   "preambleCommentCount": 0,
-  "readyPlan": [
-    "type:AssetHandler",
-    "var:0",
-    "const:0",
-    "type_group:0",
-    "func:Slow",
-    "func:NewAssetHandler",
-    "method:AssetHandler.Create",
-    "method:AssetHandler.List",
-    "init:0"
-  ],
+  "readyPlan": {
+    "schemaVersion": 1,
+    "file": "testdata/complex.go",
+    "order": [
+      {
+        "id": "type:AssetHandler"
+      },
+      {
+        "id": "var:0"
+      },
+      {
+        "id": "const:0"
+      },
+      {
+        "id": "type_group:0"
+      },
+      {
+        "id": "func:Slow"
+      },
+      {
+        "id": "func:NewAssetHandler"
+      },
+      {
+        "id": "method:AssetHandler.Create"
+      },
+      {
+        "id": "method:AssetHandler.List"
+      },
+      {
+        "id": "init:0"
+      }
+    ]
+  },
   "entities": [
     {
       "id": "type:AssetHandler",

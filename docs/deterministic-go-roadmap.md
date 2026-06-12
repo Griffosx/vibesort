@@ -74,6 +74,7 @@ The LLM, if used later, proposes JSON, not source code:
 
 ```json
 {
+  "schemaVersion": 1,
   "file": "internal/api/handlers/asset.go",
   "order": [
     {"id": "type:AssetHandler"},
@@ -133,7 +134,7 @@ Command:
 vibesort validate plan.json
 ```
 
-Status: next target.
+Status: implemented.
 
 Validation parses the plan, inventories the current target file, and rejects invalid plans without changing the filesystem.
 
@@ -153,9 +154,9 @@ Apply will run inventory and validation, reassemble entity segments in requested
 
 ## Current State
 
-Sprint 1 is implemented.
+Sprint 1 and Sprint 2 are implemented.
 
-Sprint 2 is the next implementation target.
+Sprint 3 is the next implementation target.
 
 ## Out Of Scope For The Deterministic Go Core
 

@@ -14,11 +14,12 @@ Vibesort is deliberately conservative. It only accepts files that have already b
 
 ## Status
 
-This repository currently contains the deterministic Go inventory core.
+This repository currently contains the deterministic Go inventory and validation core.
 
 Implemented:
 
 - `vibesort inventory file.go`
+- `vibesort validate plan.json`
 - Go source parsing with `go/parser`
 - fixed preamble inventory
 - post-preamble top-level entity inventory
@@ -28,10 +29,10 @@ Implemented:
 - identity round-trip verification
 - in-memory complete-order reassembly checks
 - inventory JSON output with a ready-to-edit order plan
+- strict order-plan validation
 
 Planned next:
 
-- order-plan validation
 - safe rewrite/apply
 - post-rewrite formatting and verification
 - skill wrappers for agent workflows
@@ -88,6 +89,14 @@ go run ./cmd/vibesort inventory path/to/file.go
 ```
 
 The command prints structured JSON describing the fixed preamble, top-level entities, movability, pinned reasons, source spans, comments, and the current valid order.
+
+Validate an edited order plan:
+
+```sh
+go run ./cmd/vibesort validate plan.json
+```
+
+The command checks the plan against the current source file and makes no source changes.
 
 ## Trade-offs
 

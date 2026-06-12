@@ -12,30 +12,60 @@ import (
 // Build or BuildSource in the same process; documents decoded from JSON
 // have no source segments and are rejected.
 func Reassemble(doc *Document, order []string) ([]byte, error) {
-	if len(order) != len(doc.Entities) {
-		return nil, fmt.Errorf("order length %d does not match entity count %d", len(order), len(doc.Entities))
-	}
 	if err := validateReassembleSegments(doc); err != nil {
+		return nil, err
+	}
+	byID, err := validateOrder(doc.Entities, order)
+	if err != nil {
 		return nil, err
 	}
 
 	var out bytes.Buffer
 	out.Write(doc.Preamble.segment)
 
-	byID := make(map[string]Entity, len(doc.Entities))
-	for _, entity := range doc.Entities {
-		byID[entity.ID] = entity
-	}
-	seen := make(map[string]struct{}, len(order))
 	var previousSegment []byte
-	pinnedOrder := []string{}
 
+	for _, id := range order {
+		entity := byID[id]
+		writeEntityBoundary(&out, previousSegment, entity.segment)
+		out.Write(entity.segment)
+		previousSegment = entity.segment
+	}
+	if doc.Postamble != nil {
+		out.Write(doc.Postamble.segment)
+	}
+
+	return out.Bytes(), nil
+}
+
+// ValidateOrder checks that order is a complete, safe permutation of entities.
+// Every entity ID must appear exactly once, and pinned entities must keep their
+// original relative order.
+func ValidateOrder(entities []Entity, order []string) error {
+	_, err := validateOrder(entities, order)
+	return err
+}
+
+func validateOrder(entities []Entity, order []string) (map[string]Entity, error) {
+	if len(order) != len(entities) {
+		return nil, fmt.Errorf("order length %d does not match entity count %d", len(order), len(entities))
+	}
+
+	seen := make(map[string]struct{}, len(order))
 	for _, id := range order {
 		if _, exists := seen[id]; exists {
 			return nil, fmt.Errorf("duplicate entity id %q", id)
 		}
 		seen[id] = struct{}{}
+	}
 
+	byID := make(map[string]Entity, len(entities))
+	for _, entity := range entities {
+		byID[entity.ID] = entity
+	}
+
+	pinnedOrder := []string{}
+	for _, id := range order {
 		entity, ok := byID[id]
 		if !ok {
 			return nil, fmt.Errorf("unknown entity id %q", id)
@@ -43,25 +73,12 @@ func Reassemble(doc *Document, order []string) ([]byte, error) {
 		if !entity.Movable {
 			pinnedOrder = append(pinnedOrder, entity.ID)
 		}
-		writeEntityBoundary(&out, previousSegment, entity.segment)
-		out.Write(entity.segment)
-		previousSegment = entity.segment
 	}
 
-	for _, entity := range doc.Entities {
-		if _, ok := seen[entity.ID]; !ok {
-			return nil, fmt.Errorf("missing entity id %q", entity.ID)
-		}
-	}
-
-	if !sameStrings(pinnedOrder, originalPinnedOrder(doc.Entities)) {
+	if !sameStrings(pinnedOrder, originalPinnedOrder(entities)) {
 		return nil, errors.New("pinned entity relative order changed")
 	}
-	if doc.Postamble != nil {
-		out.Write(doc.Postamble.segment)
-	}
-
-	return out.Bytes(), nil
+	return byID, nil
 }
 
 func validateReassembleSegments(doc *Document) error {

@@ -13,9 +13,15 @@
 // with multiple top-level declarations on one line.
 package inventory
 
-// SchemaVersion identifies the JSON layout of Document. Consumers should
-// reject documents carrying an unknown version.
+// SchemaVersion identifies the compatibility version of Document JSON. It
+// changes only when existing consumers could silently misread changed
+// semantics, renamed fields, removed fields, or field type changes.
 const SchemaVersion = 1
+
+// PlanSchemaVersion identifies the JSON layout of ReadyPlan. It lives in
+// inventory because ReadyPlan is emitted from inventory JSON, while the
+// validation package imports inventory and cannot be imported back.
+const PlanSchemaVersion = 1
 
 // Document is the inventory of one Go source file. Its JSON form is the
 // public contract consumed by plan-producing tools.
@@ -105,8 +111,9 @@ type CommentGroup struct {
 // ReadyPlan is the current entity order in plan form, ready to be permuted
 // by a plan-producing tool and fed back for validation.
 type ReadyPlan struct {
-	File  string      `json:"file"`
-	Order []OrderItem `json:"order"`
+	SchemaVersion int         `json:"schemaVersion"`
+	File          string      `json:"file"`
+	Order         []OrderItem `json:"order"`
 }
 
 // OrderItem references one entity by ID.

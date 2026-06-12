@@ -45,11 +45,21 @@ func TestInventoryGoldenFixtures(t *testing.T) {
 			if doc.SchemaVersion != golden.SchemaVersion {
 				t.Fatalf("schema version = %d, want %d", doc.SchemaVersion, golden.SchemaVersion)
 			}
+			goldenReadyPlan := parseGoldenReadyPlan(t, golden.ReadyPlan)
+			if doc.ReadyPlan.SchemaVersion != goldenReadyPlan.SchemaVersion {
+				t.Fatalf("ready plan schema version = %d, want %d", doc.ReadyPlan.SchemaVersion, goldenReadyPlan.SchemaVersion)
+			}
+			if doc.ReadyPlan.File != goldenReadyPlan.File {
+				t.Fatalf("ready plan file = %q, want %q", doc.ReadyPlan.File, goldenReadyPlan.File)
+			}
+			if got, want := readyPlanIDs(doc.ReadyPlan.Order), readyPlanIDs(goldenReadyPlan.Order); !equalStrings(got, want) {
+				t.Fatalf("ready plan ids = %#v, want %#v", got, want)
+			}
+			if got, want := mustMarshal(t, doc.ReadyPlan), compactJSON(t, golden.ReadyPlan); !bytes.Equal(got, want) {
+				t.Fatalf("ready plan JSON = %s, want %s", got, want)
+			}
 			if doc.Preamble.CommentCount != golden.PreambleCommentCount {
 				t.Fatalf("preamble comment count = %d, want %d", doc.Preamble.CommentCount, golden.PreambleCommentCount)
-			}
-			if got := readyPlanIDs(doc); !equalStrings(got, golden.ReadyPlan) {
-				t.Fatalf("ready plan ids = %#v, want %#v", got, golden.ReadyPlan)
 			}
 			if len(doc.Entities) != len(golden.Entities) {
 				t.Fatalf("entities len = %d, want %d", len(doc.Entities), len(golden.Entities))
@@ -73,11 +83,27 @@ func TestInventoryGoldenFixtures(t *testing.T) {
 
 func TestEmptyPackageInventory(t *testing.T) {
 	doc := mustBuild(t, "empty_package.go")
+	if doc.SchemaVersion != SchemaVersion {
+		t.Fatalf("schema version = %d, want %d", doc.SchemaVersion, SchemaVersion)
+	}
+	if doc.ReadyPlan.SchemaVersion != PlanSchemaVersion {
+		t.Fatalf("ready plan schema version = %d, want %d", doc.ReadyPlan.SchemaVersion, PlanSchemaVersion)
+	}
 	if len(doc.Entities) != 0 {
 		t.Fatalf("entities len = %d, want 0", len(doc.Entities))
 	}
+	if doc.ReadyPlan.Order == nil {
+		t.Fatal("ready plan order is nil, want non-nil empty slice")
+	}
 	if len(doc.ReadyPlan.Order) != 0 {
 		t.Fatalf("ready plan len = %d, want 0", len(doc.ReadyPlan.Order))
+	}
+	data, err := json.Marshal(doc.ReadyPlan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"order":[]`) {
+		t.Fatalf("ready plan JSON = %s, want empty order array", data)
 	}
 	if doc.Preamble.CommentCount != 1 {
 		t.Fatalf("preamble comment count = %d, want package doc only", doc.Preamble.CommentCount)
@@ -620,9 +646,14 @@ func TestReassembleRejectsJSONRoundTrippedDocument(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = Reassemble(&decoded, readyPlanIDs(&decoded))
+	_, err = Reassemble(&decoded, readyPlanIDs(decoded.ReadyPlan.Order))
 	if err == nil || !strings.Contains(err.Error(), "source segments are unavailable") {
 		t.Fatalf("err = %v, want missing segment rejection", err)
+	}
+
+	_, err = Reassemble(&decoded, []string{"func:A", "func:A"})
+	if err == nil || !strings.Contains(err.Error(), "source segments are unavailable") {
+		t.Fatalf("err = %v, want missing segment rejection before order validation", err)
 	}
 }
 
@@ -711,10 +742,10 @@ type (
 }
 
 type inventoryGolden struct {
-	SchemaVersion        int            `json:"schemaVersion"`
-	PreambleCommentCount int            `json:"preambleCommentCount"`
-	ReadyPlan            []string       `json:"readyPlan"`
-	Entities             []goldenEntity `json:"entities"`
+	SchemaVersion        int             `json:"schemaVersion"`
+	PreambleCommentCount int             `json:"preambleCommentCount"`
+	ReadyPlan            json.RawMessage `json:"readyPlan"`
+	Entities             []goldenEntity  `json:"entities"`
 }
 
 type goldenEntity struct {
@@ -772,12 +803,39 @@ func ids(entities []Entity) []string {
 	return out
 }
 
-func readyPlanIDs(doc *Document) []string {
-	out := make([]string, 0, len(doc.ReadyPlan.Order))
-	for _, item := range doc.ReadyPlan.Order {
+func readyPlanIDs(order []OrderItem) []string {
+	out := make([]string, 0, len(order))
+	for _, item := range order {
 		out = append(out, item.ID)
 	}
 	return out
+}
+
+func parseGoldenReadyPlan(t *testing.T, data json.RawMessage) ReadyPlan {
+	t.Helper()
+	var readyPlan ReadyPlan
+	if err := json.Unmarshal(data, &readyPlan); err != nil {
+		t.Fatal(err)
+	}
+	return readyPlan
+}
+
+func compactJSON(t *testing.T, data []byte) []byte {
+	t.Helper()
+	var out bytes.Buffer
+	if err := json.Compact(&out, data); err != nil {
+		t.Fatal(err)
+	}
+	return out.Bytes()
+}
+
+func mustMarshal(t *testing.T, v any) []byte {
+	t.Helper()
+	data, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }
 
 func commentTexts(comments []CommentGroup) []string {

@@ -1,20 +1,48 @@
 {
   "schemaVersion": 1,
   "preambleCommentCount": 4,
-  "readyPlan": [
-    "type:Alias",
-    "type:Reader",
-    "type:HandlerFunc",
-    "type:Pair",
-    "var:0",
-    "var:1",
-    "const:0",
-    "const:1",
-    "func:Blocky",
-    "method:Pair.Run",
-    "init:0",
-    "init:1"
-  ],
+  "readyPlan": {
+    "schemaVersion": 1,
+    "file": "testdata/all_top_level_shapes.go",
+    "order": [
+      {
+        "id": "type:Alias"
+      },
+      {
+        "id": "type:Reader"
+      },
+      {
+        "id": "type:HandlerFunc"
+      },
+      {
+        "id": "type:Pair"
+      },
+      {
+        "id": "var:0"
+      },
+      {
+        "id": "var:1"
+      },
+      {
+        "id": "const:0"
+      },
+      {
+        "id": "const:1"
+      },
+      {
+        "id": "func:Blocky"
+      },
+      {
+        "id": "method:Pair.Run"
+      },
+      {
+        "id": "init:0"
+      },
+      {
+        "id": "init:1"
+      }
+    ]
+  },
   "entities": [
     {
       "id": "type:Alias",

@@ -1,12 +1,24 @@
 {
   "schemaVersion": 1,
   "preambleCommentCount": 0,
-  "readyPlan": [
-    "func:KnownDirective",
-    "func:UnknownDirective",
-    "func:SameLineDirectiveText",
-    "func:TrailingGenerateOwner"
-  ],
+  "readyPlan": {
+    "schemaVersion": 1,
+    "file": "testdata/directives.go",
+    "order": [
+      {
+        "id": "func:KnownDirective"
+      },
+      {
+        "id": "func:UnknownDirective"
+      },
+      {
+        "id": "func:SameLineDirectiveText"
+      },
+      {
+        "id": "func:TrailingGenerateOwner"
+      }
+    ]
+  },
   "entities": [
     {
       "id": "func:KnownDirective",

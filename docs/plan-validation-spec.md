@@ -1,6 +1,6 @@
 # Vibesort Plan Validation Spec
 
-Status: draft for Sprint 2 implementation.
+Status: implemented for Sprint 2.
 
 This spec defines the read-only validation contract for:
 
@@ -85,6 +85,8 @@ Required fields:
 - `order`: array of order items
 
 The version lives on the plan itself because plans travel as standalone files; the inventory document's `schemaVersion` does not protect them. The inventory `readyPlan` output should gain the same field in Sprint 2 so it remains a valid plan as-is.
+
+Inventory document `schemaVersion` is a compatibility version, not an exact-shape version. Additive inventory JSON fields do not require a bump; breaking semantic changes, renamed fields, removed fields, or field type changes do.
 
 Order item fields:
 
